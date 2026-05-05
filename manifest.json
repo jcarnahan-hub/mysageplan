@@ -1,0 +1,17 @@
+{
+  "name": "SagePlan",
+  "short_name": "SagePlan",
+  "description": "Simply structured, Beautifully planned.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F2E9",
+  "theme_color": "#8A9A84",
+  "icons": [
+    {
+      "src": "icon_sageplan.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
