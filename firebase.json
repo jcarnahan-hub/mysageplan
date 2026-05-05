@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "mysageplan",
     "public": ".",
     "ignore": [
       "firebase.json",
