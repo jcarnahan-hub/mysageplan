@@ -3087,10 +3087,9 @@ function sendEmailReminder(){
   const bodyEnc = encodeURIComponent(body);
   const a = document.createElement('a');
   a.href = 'mailto:'+email+'?subject='+subject+'&body='+bodyEnc;
-  a.target = '_blank';
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
+  setTimeout(()=>document.body.removeChild(a), 100);
 }
 
 
