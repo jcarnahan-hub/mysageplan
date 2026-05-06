@@ -3085,7 +3085,12 @@ function sendEmailReminder(){
   
   const subject = encodeURIComponent('SagePlan: '+( overdue.length?overdue.length+' Overdue Bill'+(overdue.length!==1?'s':''):'Bills Due Soon'));
   const bodyEnc = encodeURIComponent(body);
-  window.location.href = 'mailto:'+email+'?subject='+subject+'&body='+bodyEnc;
+  const a = document.createElement('a');
+  a.href = 'mailto:'+email+'?subject='+subject+'&body='+bodyEnc;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 
