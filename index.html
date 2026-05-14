@@ -12,8 +12,9 @@
 <meta name="apple-mobile-web-app-title" content="SagePlan">
 <meta name="description" content="SagePlan – Simply structured, Beautifully planned ~ Bringing precision and peace of mind to financial obligations.">
 <link rel="manifest" href="manifest.json?v=3">
-<link rel="apple-touch-icon" sizes="512x512" href="icon_sageplan.png?v=1">
-<link rel="icon" type="image/png" sizes="512x512" href="icon_sageplan.png?v=1">
+<!-- BUG 1 FIX: bumped icon version v1→v2 to force PWA cache refresh without reinstall -->
+<link rel="apple-touch-icon" sizes="512x512" href="icon_sageplan.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="icon_sageplan.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -302,7 +303,7 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
 
 <!-- ══ LOGIN SCREEN ══ -->
 <div id="login-screen" style="position:fixed;inset:0;z-index:9998;background:#F7F2E9;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0">
-  <img src="icon_sageplan.png?v=1" style="width:120px;height:120px;border-radius:28px;box-shadow:0 0 40px rgba(138,154,132,.25);margin-bottom:24px" alt="SagePlan">
+  <img src="icon_sageplan.png?v=2" style="width:120px;height:120px;border-radius:28px;box-shadow:0 0 40px rgba(138,154,132,.25);margin-bottom:24px" alt="SagePlan">
   <div style="font-family:'Inter',sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px"><span style="color:#3C3C3C">Sage</span><span style="color:#8A9A84">Plan</span></div>
   <div style="font-family:'Inter',sans-serif;font-size:13px;color:#6B6B5A;font-style:italic;text-align:center;margin-bottom:32px;line-height:2">
     <div>Simply structured, Beautifully planned</div>
@@ -317,7 +318,7 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
 
 <!-- ══ SPLASH SCREEN ══ -->
 <div id="splash" style="position:fixed;inset:0;z-index:9999;background:#F7F2E9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:opacity .6s ease">
-  <img src="icon_sageplan.png?v=1" style="width:160px;height:160px;border-radius:32px;box-shadow:0 0 60px rgba(138,154,132,.3);animation:splashPop .6s ease;margin-bottom:20px" alt="SagePlan">
+  <img src="icon_sageplan.png?v=2" style="width:160px;height:160px;border-radius:32px;box-shadow:0 0 60px rgba(138,154,132,.3);animation:splashPop .6s ease;margin-bottom:20px" alt="SagePlan">
   <div style="font-family:'Inter',sans-serif;font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px"><span style="color:#3C3C3C">Sage</span><span style="color:#8A9A84">Plan</span></div>
   <div style="font-family:'Inter',sans-serif;font-size:13px;color:#6B6B5A;font-style:italic;text-align:center;padding:0 30px;line-height:2">
     <div>Simply structured, Beautifully planned</div>
@@ -1149,9 +1150,20 @@ function isActiveIn(bill,y,m){
     return monthsDiff % intervalMonths === 0;
   }
 
-  // Priority 3: use startDate as anchor (best guess)
+  // Priority 3: use startDate as anchor, adjusted for due day
+  // BUG 3 FIX: if the due day already passed in the start month, the first actual
+  // due date is the *next* month — use that as the anchor, not the raw startDate month.
+  // e.g. quarterly bill, startDate Apr 20, due day 15 → first due is May 15, not Apr 15.
   const anchorYr = ps.getFullYear(), anchorMo = ps.getMonth();
-  const monthsDiff = (y - anchorYr) * 12 + (m - anchorMo);
+  const dueDay = parseInt(bill.dueDayOfMonth) || 1;
+  const startDueInStartMonth = new Date(anchorYr, anchorMo, dueDay);
+  let firstDueYr = anchorYr, firstDueMo = anchorMo;
+  if(startDueInStartMonth < ps){
+    // Due day already passed within the start month; first due is next calendar month
+    firstDueMo = anchorMo + 1;
+    if(firstDueMo > 11){ firstDueMo = 0; firstDueYr++; }
+  }
+  const monthsDiff = (y - firstDueYr) * 12 + (m - firstDueMo);
   if(monthsDiff < 0) return false;
   return monthsDiff % intervalMonths === 0;
 }
@@ -1880,7 +1892,7 @@ function renderBillList(){
       dueDisplay = nextLabel || 'Not due this month';
     }
     else{ dueDisplay='Due '+fmtDate(dueStr); }
-    const ccZeroStr=b.category==='creditcard'&&(b.ccBalance===0||b.ccBalance==='0')?getCCBadge(b,true):'';
+    const ccZeroStr=b.category==='creditcard'&&parseFloat(b.ccBalance)===0?getCCBadge(b,true):'';
     const pmBadge2=b.payMethod?`<span style="font-size:9px;background:var(--bg4);color:var(--text2);border-radius:4px;padding:1px 5px;margin-left:4px">${fmtPayMethod(b.payMethod)}</span>`:'';
     // Right side: amount + status badge on same line, clean layout matching Insights
     const statusBadge = p?.skipped?skippedBadge():
@@ -1984,7 +1996,7 @@ function renderOverview(y,m,now){
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input type="text" id="ins-search" placeholder="Search bills..." oninput="renderInsights()">
     </div>
-    ${insBills.filter(b=>{const q=(document.getElementById('ins-search')||{}).value||'';return !q||b.name.toLowerCase().includes(q.toLowerCase());}).length?`<div class="card">${[...insBills].filter(b=>{const q=(document.getElementById('ins-search')||{}).value||'';return !q||b.name.toLowerCase().includes(q.toLowerCase());}).sort((a,b_)=>b_.amount-a.amount).map(b=>{const p=paymentThisMonth(b);const ap=isAutoPay(b);return`<div class="wr-row" onclick="openDetail(${b.id})" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px">${renderIconWithUrl(b.icon,b.url,30)}<div><div style="font-size:13px;font-weight:600">${b.name}</div><div style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;flex-wrap:wrap">${b.freq}${totalInc?' · '+(b.amount/totalInc*100<1?(b.amount/totalInc*100).toFixed(1):Math.round(b.amount/totalInc*100))+'%':''}${ap?autoPayBadge(b):''}</div></div></div><div style="text-align:right"><div style="font-size:14px;font-weight:700;font-family:var(--mono)">${fmtM(b.amount)}</div>${p?.skipped?skippedBadge():p?.prepaid?`<span style="font-size:10px;font-weight:700;color:var(--info);background:rgba(96,165,250,.12);border-radius:4px;padding:1px 5px;border:1px solid rgba(96,165,250,.25)">✓ Pre-paid</span>`:p?.paid?`<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(34,211,160,.1);border-radius:4px;padding:1px 5px;border:1px solid rgba(138,154,132,.25)">✓ Paid</span>`:ap?`<span style="font-size:10px;font-weight:700;color:var(--info);background:rgba(96,165,250,.12);border-radius:4px;padding:1px 5px;border:1px solid rgba(96,165,250,.25)">⚡ AutoPay</span>`:isOverdue(b)?`<span style="font-size:10px;font-weight:700;color:var(--danger)">Overdue</span>`:daysUntilDue(b)===0?`<span style="font-size:10px;font-weight:700;color:var(--warn)">Due today</span>`:''}</div>${b.category==='creditcard'&&b.ccBalance===0?`<div style="margin-top:2px">${getCCBadge(b)}</div>`:''}</div></div>`;}).join('')}</div>`:`<div class="empty" style="padding:24px"><div class="empty-t">No bills found</div></div>` }`;  
+    ${insBills.filter(b=>{const q=(document.getElementById('ins-search')||{}).value||'';return !q||b.name.toLowerCase().includes(q.toLowerCase());}).length?`<div class="card">${[...insBills].filter(b=>{const q=(document.getElementById('ins-search')||{}).value||'';return !q||b.name.toLowerCase().includes(q.toLowerCase());}).sort((a,b_)=>b_.amount-a.amount).map(b=>{const p=paymentThisMonth(b);const ap=isAutoPay(b);return`<div class="wr-row" onclick="openDetail(${b.id})" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px">${renderIconWithUrl(b.icon,b.url,30)}<div><div style="font-size:13px;font-weight:600">${b.name}</div><div style="font-size:11px;color:var(--text2);display:flex;align-items:center;gap:4px;flex-wrap:wrap">${b.freq}${totalInc?' · '+(b.amount/totalInc*100<1?(b.amount/totalInc*100).toFixed(1):Math.round(b.amount/totalInc*100))+'%':''}${ap?autoPayBadge(b):''}</div></div></div><div style="text-align:right"><div style="font-size:14px;font-weight:700;font-family:var(--mono)">${fmtM(b.amount)}</div>${p?.skipped?skippedBadge():p?.prepaid?`<span style="font-size:10px;font-weight:700;color:var(--info);background:rgba(96,165,250,.12);border-radius:4px;padding:1px 5px;border:1px solid rgba(96,165,250,.25)">✓ Pre-paid</span>`:p?.paid?`<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(34,211,160,.1);border-radius:4px;padding:1px 5px;border:1px solid rgba(138,154,132,.25)">✓ Paid</span>`:ap?`<span style="font-size:10px;font-weight:700;color:var(--info);background:rgba(96,165,250,.12);border-radius:4px;padding:1px 5px;border:1px solid rgba(96,165,250,.25)">⚡ AutoPay</span>`:isOverdue(b)?`<span style="font-size:10px;font-weight:700;color:var(--danger)">Overdue</span>`:daysUntilDue(b)===0?`<span style="font-size:10px;font-weight:700;color:var(--warn)">Due today</span>`:''}</div>${b.category==='creditcard'&&parseFloat(b.ccBalance)===0?`<div style="margin-top:2px">${getCCBadge(b)}</div>`:''}</div></div>`;}).join('')}</div>`:`<div class="empty" style="padding:24px"><div class="empty-t">No bills found</div></div>` }`;  
 }
 
 // ── Reports (Week/Month/Year) ──
@@ -2930,17 +2942,20 @@ function prepaidBadge(p, small=true){
 
 
 function getCCBadge(b, small=true){
+  // BUG 2 FIX: normalize ccBalance with parseFloat so string "0" matches as well as number 0
   if(b.category!=='creditcard' || b.ccBalance==null) return '';
-  if(b.ccBalance===0){
-    return small 
-      ? '<span style="font-size:9px;font-weight:700;color:var(--accent);background:rgba(34,211,160,.1);border-radius:4px;padding:1px 5px">$0 🎉</span>'
-      : '<span style="font-size:12px;font-weight:700;color:var(--accent)">$0 🎉 Paid off!</span>';
+  const bal = parseFloat(b.ccBalance);
+  if(isNaN(bal)) return '';
+  if(bal===0){
+    return small
+      ? '<span style="font-size:9px;font-weight:700;color:var(--accent);background:rgba(34,211,160,.1);border-radius:4px;padding:1px 5px">$0 \uD83C\uDF89</span>'
+      : '<span style="font-size:12px;font-weight:700;color:var(--accent)">$0 \uD83C\uDF89 Paid off!</span>';
   }
-  const util = b.ccLimit ? Math.round((b.ccBalance/b.ccLimit)*100) : null;
+  const util = b.ccLimit ? Math.round((bal/b.ccLimit)*100) : null;
   const color = util ? (util>=90?'var(--danger)':util>=70?'var(--warn)':'var(--danger)') : 'var(--danger)';
   return small
-    ? '<span style="font-size:9px;font-weight:700;color:'+color+';background:rgba(239,68,68,.1);border-radius:4px;padding:1px 5px">'+fmtM(b.ccBalance)+(util?' ('+util+'%)':'')+'</span>'
-    : '<span style="font-size:12px;font-weight:700;color:'+color+'">Balance: '+fmtM(b.ccBalance)+(util?' &middot; '+util+'% used':'')+'</span>';
+    ? '<span style="font-size:9px;font-weight:700;color:'+color+';background:rgba(239,68,68,.1);border-radius:4px;padding:1px 5px">'+fmtM(bal)+(util?' ('+util+'%)':'')+'</span>'
+    : '<span style="font-size:12px;font-weight:700;color:'+color+'">Balance: '+fmtM(bal)+(util?' &middot; '+util+'% used':'')+'</span>';
 }
 
 function toggleCreditFields(){
