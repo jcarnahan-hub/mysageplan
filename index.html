@@ -12,7 +12,6 @@
 <meta name="apple-mobile-web-app-title" content="SagePlan">
 <meta name="description" content="SagePlan – Simply structured, Beautifully planned ~ Bringing precision and peace of mind to financial obligations.">
 <link rel="manifest" href="manifest.json?v=3">
-<!-- BUG 1 FIX: bumped icon version v1→v2 to force PWA cache refresh without reinstall -->
 <link rel="apple-touch-icon" sizes="512x512" href="icon_sageplan.png?v=2">
 <link rel="icon" type="image/png" sizes="512x512" href="icon_sageplan.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1151,15 +1150,12 @@ function isActiveIn(bill,y,m){
   }
 
   // Priority 3: use startDate as anchor, adjusted for due day
-  // BUG 3 FIX: if the due day already passed in the start month, the first actual
-  // due date is the *next* month — use that as the anchor, not the raw startDate month.
-  // e.g. quarterly bill, startDate Apr 20, due day 15 → first due is May 15, not Apr 15.
+  // BUG 3 FIX: if due day already passed in start month, first due is next month
   const anchorYr = ps.getFullYear(), anchorMo = ps.getMonth();
   const dueDay = parseInt(bill.dueDayOfMonth) || 1;
   const startDueInStartMonth = new Date(anchorYr, anchorMo, dueDay);
   let firstDueYr = anchorYr, firstDueMo = anchorMo;
   if(startDueInStartMonth < ps){
-    // Due day already passed within the start month; first due is next calendar month
     firstDueMo = anchorMo + 1;
     if(firstDueMo > 11){ firstDueMo = 0; firstDueYr++; }
   }
@@ -1922,14 +1918,14 @@ function renderCalendar(){
     const isToday=d===now.getDate()&&calMonth===now.getMonth()&&calYear===now.getFullYear();
     const isPast=new Date(calYear,calMonth,d)<now&&!isToday;
     const bs=billsDueOn(calYear,calMonth,d);
-    const dots=bs.map(b=>{const pk=periodKey(calYear,calMonth);const p=(b.payments||{})[pk];const c=p?.prepaid?'var(--info)':p?.paid?'var(--accent)':isOverdue(b)?'var(--danger)':'var(--warn)';return`<div class="cal-dot" style="background:${c}"></div>`;}).join('');
+    const dots=bs.map(b=>{const pk=periodKey(calYear,calMonth);const p=(b.payments||{})[pk];const calDueSt=dueDateFor(b,calYear,calMonth);const calOd=!isClosed(b)&&!(p&&(p.paid||p.prepaid||p.skipped))&&new Date(calDueSt+'T12:00')<today();const c=p?.prepaid?'var(--info)':p?.paid?'var(--accent)':calOd?'var(--danger)':'var(--warn)';return`<div class="cal-dot" style="background:${c}"></div>`;}).join('');
     const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     html+=`<div class="cal-day ${isToday?'today':''} ${isPast?'past':''} ${bs.length?'has-bill':''}" ${bs.length?`onclick="openCalDay('${ds}')"`:''}><span class="cal-day-num">${d}</span>${dots?`<div class="cal-dots">${dots}</div>`:''}</div>`;
   }
   document.getElementById('cal-days').innerHTML=html;
   const mb=bills.filter(b=>isActiveIn(b,calYear,calMonth)).sort((a,b_)=>new Date(dueDateFor(a,calYear,calMonth))-new Date(dueDateFor(b_,calYear,calMonth)));
   if(!mb.length){document.getElementById('cal-bill-list').innerHTML=`<div class="empty" style="padding:24px"><div class="empty-t">No bills this month</div></div>`;return;}
-  document.getElementById('cal-bill-list').innerHTML=mb.map(b=>{const pk=periodKey(calYear,calMonth);const p=(b.payments||{})[pk];const ap=isAutoPay(b);const cls=p?.skipped?'is-skipped':p?.prepaid?'is-prepaid':p?.paid?'is-paid':isOverdue(b)?'is-overdue':'';const badge=p?.skipped?`<span class="badge b-skipped">⏭️ Skipped</span>`:p?.prepaid?`<span class="badge b-prepaid">Pre-paid · ${fmtDate(p.prepaidDate)}</span>`:p?.paid?`<span class="badge b-paid">Paid</span>`:ap?`<span style="font-size:10px;font-weight:700;color:var(--info);background:rgba(96,165,250,.12);border-radius:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.25)">⚡ AutoPay</span>`:isOverdue(b)?`<span class="badge b-overdue">Overdue</span>`:'';return`<div class="bi ${cls}" onclick="openDetail(${b.id})">${renderIconWithUrl(b.icon,b.url,42)}<div class="binfo"><div class="bname">${b.name}</div><div class="bsub">Due ${fmtDate(dueDateFor(b,calYear,calMonth))}</div></div><div class="bright"><div class="bamt">${fmtM(b.amount)}</div><div class="bduerow">${badge}</div></div></div>`;}).join('');
+  document.getElementById('cal-bill-list').innerHTML=mb.map(b=>{const pk=periodKey(calYear,calMonth);const p=(b.payments||{})[pk];const ap=isAutoPay(b);const calDueStr=dueDateFor(b,calYear,calMonth);const calIsOverdue=!isClosed(b)&&!(p&&(p.paid||p.prepaid||p.skipped))&&new Date(calDueStr+'T12:00')<today();const cls=p?.skipped?'is-skipped':p?.prepaid?'is-prepaid':p?.paid?'is-paid':calIsOverdue?'is-overdue':'';const badge=p?.skipped?`<span class="badge b-skipped">⏭️ Skipped</span>`:p?.prepaid?`<span class="badge b-prepaid">Pre-paid · ${fmtDate(p.prepaidDate)}</span>`:p?.paid?`<span class="badge b-paid">Paid</span>`:ap?`<span style="font-size:10px;font-weight:700;color:var(--info);background:rgba(96,165,250,.12);border-radius:4px;padding:1px 6px;border:1px solid rgba(96,165,250,.25)">⚡ AutoPay</span>`:calIsOverdue?`<span class="badge b-overdue">Overdue</span>`:'';return`<div class="bi ${cls}" onclick="openDetail(${b.id})">${renderIconWithUrl(b.icon,b.url,42)}<div class="binfo"><div class="bname">${b.name}</div><div class="bsub">Due ${fmtDate(calDueStr)}</div></div><div class="bright"><div class="bamt">${fmtM(b.amount)}</div><div class="bduerow">${badge}</div></div></div>`;}).join('');
 }
 function openCalDay(ds){
   const[y,m,d]=ds.split('-').map(Number);
@@ -2942,14 +2938,14 @@ function prepaidBadge(p, small=true){
 
 
 function getCCBadge(b, small=true){
-  // BUG 2 FIX: normalize ccBalance with parseFloat so string "0" matches as well as number 0
+  // BUG 2 FIX: normalize with parseFloat so string '0' === number 0
   if(b.category!=='creditcard' || b.ccBalance==null) return '';
   const bal = parseFloat(b.ccBalance);
   if(isNaN(bal)) return '';
   if(bal===0){
-    return small
-      ? '<span style="font-size:9px;font-weight:700;color:var(--accent);background:rgba(34,211,160,.1);border-radius:4px;padding:1px 5px">$0 \uD83C\uDF89</span>'
-      : '<span style="font-size:12px;font-weight:700;color:var(--accent)">$0 \uD83C\uDF89 Paid off!</span>';
+    return small 
+      ? '<span style="font-size:9px;font-weight:700;color:var(--accent);background:rgba(34,211,160,.1);border-radius:4px;padding:1px 5px">$0 🎉</span>'
+      : '<span style="font-size:12px;font-weight:700;color:var(--accent)">$0 🎉 Paid off!</span>';
   }
   const util = b.ccLimit ? Math.round((bal/b.ccLimit)*100) : null;
   const color = util ? (util>=90?'var(--danger)':util>=70?'var(--warn)':'var(--danger)') : 'var(--danger)';
