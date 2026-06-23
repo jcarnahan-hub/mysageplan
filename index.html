@@ -774,7 +774,7 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
 
       <div style="display:flex;gap:9px;margin-top:18px;padding-bottom:6px">
         <button class="btn btn-accent btn-full" onclick="saveBill()">Save bill</button>
-        <button class="btn btn-danger" id="del-btn" onclick="confirmDelete()" style="display:none;padding:9px 14px">🗑</button>
+        <button class="btn btn-danger" id="del-btn" onclick="confirmDelete()" style="display:none;padding:9px 16px;gap:6px">🗑 Delete Bill</button>
       </div>
     </div>
   </div>
@@ -1647,7 +1647,7 @@ function openDetail(id){
       ${!closed&&!(p?.paid||p?.prepaid)?`<button class="btn btn-accent" onclick="openPaySheet(${b.id})" style="flex:1">Mark as paid</button>`:''}
       ${(p?.paid||p?.prepaid||p?.skipped)?`<button class="btn btn-ghost" onclick="unmarkPaid(${b.id})" style="flex:1">${p?.skipped?'Unskip':'Unmark paid'}</button>`:''}
       <button class="btn btn-ghost" onclick="openEdit(${b.id})" style="flex:1">Edit</button>
-      ${!closed?`<button class="btn btn-danger" onclick="closeBill(${b.id})" style="flex:1">Close bill</button>`:`<button class="btn btn-ghost" onclick="reopenBill(${b.id})" style="flex:1">Re-open</button>`}
+      ${!closed?`<button class="btn btn-danger" onclick="closeBill(${b.id})" style="flex:1">⛔ End / Close Bill</button>`:`<button class="btn btn-ghost" onclick="reopenBill(${b.id})" style="flex:1">Re-open</button>`}
     </div>
     ${histHtml}<div style="height:8px"></div>`;
   openSheet('detail-sheet');
