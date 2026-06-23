@@ -774,7 +774,7 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
 
       <div style="display:flex;gap:9px;margin-top:18px;padding-bottom:6px">
         <button class="btn btn-accent btn-full" onclick="saveBill()">Save bill</button>
-        <button class="btn btn-danger" id="del-btn" onclick="confirmDelete()" style="display:none;padding:9px 16px;gap:6px">🗑 Delete Bill</button>
+        <button class="btn btn-danger" id="del-btn" onclick="confirmDelete()" style="display:none;padding:9px 16px;gap:6px">🗑 Delete Bill & History</button>
       </div>
     </div>
   </div>
@@ -2166,21 +2166,69 @@ function renderDebtReport(){
       <div class="ic"><div class="ic-lbl">Min Payments</div><div class="ic-val" style="font-size:16px">${fmtM(totalMinPayments)}</div><div class="ic-sub">per month</div></div>
     </div>
 
-    <!-- Overall utilization bar -->
+    <!-- Overall utilization bar with health zones -->
     ${totalCCLimit>0?`
     <div class="card" style="margin-bottom:14px;padding:14px 16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <span style="font-size:13px;font-weight:700">Overall Credit Utilization</span>
-        <span style="font-size:14px;font-weight:700;color:${utilColor}">${overallUtil}%</span>
+        <span style="font-size:18px;font-weight:700;color:${utilColor}">${overallUtil}%</span>
       </div>
-      <div style="height:10px;background:var(--bg3);border-radius:5px;overflow:hidden;margin-bottom:6px">
-        <div style="height:100%;width:${Math.min(overallUtil,100)}%;background:${utilColor};border-radius:5px;transition:width .4s"></div>
+
+      <!-- Segmented health zone bar -->
+      <div style="position:relative;height:14px;border-radius:7px;overflow:hidden;display:flex;margin-bottom:4px">
+        <div style="flex:0 0 30%;background:var(--accent);opacity:.85"></div>
+        <div style="flex:0 0 40%;background:var(--warn);opacity:.75"></div>
+        <div style="flex:0 0 30%;background:var(--danger);opacity:.8"></div>
+        <!-- Needle marker for current utilization -->
+        <div style="position:absolute;top:0;bottom:0;left:${Math.min(overallUtil,100)}%;transform:translateX(-50%);width:3px;background:#fff;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.4)"></div>
       </div>
+      <!-- Zone labels -->
+      <div style="display:flex;font-size:9px;font-weight:600;color:var(--text2);margin-bottom:10px">
+        <div style="flex:0 0 30%;text-align:center;color:var(--accent)">Excellent<br>0–30%</div>
+        <div style="flex:0 0 40%;text-align:center;color:var(--warn)">Fair<br>30–70%</div>
+        <div style="flex:0 0 30%;text-align:center;color:var(--danger)">High Risk<br>70–100%</div>
+      </div>
+
+      <!-- Your position vs target -->
+      <div style="background:var(--bg3);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--text2);font-weight:600">YOUR UTILIZATION</span>
+          <span style="font-size:14px;font-weight:700;color:${utilColor}">${overallUtil}% ${overallUtil<=30?'✅':overallUtil<=70?'⚠️':'🚨'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--text2);font-weight:600">RECOMMENDED TARGET</span>
+          <span style="font-size:14px;font-weight:700;color:var(--accent)">≤ 30%</span>
+        </div>
+        ${overallUtil>30&&totalCCLimit>0?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--text2)">
+          Pay down <strong style="color:var(--accent)">${fmtM(Math.max(0,totalCCBalance-Math.round(totalCCLimit*0.3)))}</strong> to reach the 30% target
+          <span style="color:var(--text3)"> (${fmtM(Math.round(totalCCLimit*0.3))} max recommended balance)</span>
+        </div>`:''}
+        ${overallUtil<=30?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--accent)">🎉 You're within the recommended range. Great credit health!</div>`:''}
+      </div>
+
+      <!-- Zone key -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+        <div style="background:rgba(138,154,132,.1);border:1px solid rgba(138,154,132,.25);border-radius:8px;padding:7px 8px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--accent)">0–30%</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">Excellent</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:1px">Best for score</div>
+        </div>
+        <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:7px 8px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--warn)">30–70%</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">Fair</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:1px">Score impact</div>
+        </div>
+        <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:7px 8px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--danger)">70–100%</div>
+          <div style="font-size:10px;color:var(--text2);margin-top:2px">High Risk</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:1px">Hurts score</div>
+        </div>
+      </div>
+
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)">
         <span>${fmtM(totalCCBalance)} owed</span>
-        <span style="color:var(--accent)">${fmtM(totalAvailable)} free</span>
+        <span style="color:var(--accent)">${fmtM(totalAvailable)} available</span>
       </div>
-      ${overallUtil>=70?`<div style="margin-top:8px;font-size:11px;color:var(--warn);background:rgba(245,158,11,.08);border-radius:6px;padding:6px 10px">⚠️ Utilization above 70% may impact your credit score. Consider paying down balances.</div>`:''}
       ${ccMissingInfo.length?`<div style="margin-top:8px;font-size:11px;color:var(--text3)">💡 ${ccMissingInfo.length} card${ccMissingInfo.length!==1?'s have':'has'} no limit set — tap the card to add it for accurate tracking.</div>`:''}
     </div>`:''}
 
