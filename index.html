@@ -349,6 +349,7 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
   </div>
   <div class="inner" style="padding-top:14px">
     <div id="notif-banners"></div>
+    <div id="payday-strip-bills"></div>
     <div class="sh"><h2>Filter</h2></div>
     <div class="chips">
       <button class="chip active" onclick="setFilter('active',this)">Due This Month</button>
@@ -389,8 +390,8 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
     </div>
   </div>
   <div class="inner" style="padding-top:14px">
+    <div id="payday-strip-calendar"></div>
     <div class="card">
-      <div class="cal-header">
         <button class="cal-nav" onclick="calPrev()">‹</button>
         <div style="font-size:15px;font-weight:600" id="cal-title"></div>
         <button class="cal-nav" onclick="calNext()">›</button>
@@ -430,6 +431,7 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
     <button class="ins-tab" id="itab-subs" onclick="switchInsTab('subs',this)" style="flex:1;padding:7px;border-radius:var(--radius-sm);background:var(--bg3);color:var(--text2);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">📺 Subs</button>
   </div>
   <div class="inner" style="padding-top:14px">
+    <div id="payday-strip-insights"></div>
     <div id="today-summary" class="card" style="margin:0 0 12px;display:none"></div>
     <div id="ins-overview"></div>
     <div id="ins-weekly" style="display:none"></div>
@@ -1809,6 +1811,45 @@ function renderIconWithUrl(v,url,size=42){
 }
 
 // ══════════════════════════════════════════
+//  PAYDAY STRIP — shown on Bills, Calendar, Insights
+// ══════════════════════════════════════════
+function renderPaydayStrip(elementId, year, month){
+  const el = document.getElementById(elementId);
+  if(!el) return;
+  const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
+  const days = (plannerData.paydays||[]).filter(d=>d.startsWith(prefix)).sort();
+  if(!days.length){
+    // Only show the prompt if payDate is not set at all
+    if(!cfg.payDate){
+      el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;margin-bottom:10px;background:var(--bg3);border-radius:10px;font-size:11px;color:var(--text3)">💰 <span>No paydays set for this month — <span onclick="showPage('planner')" style="color:var(--accent);cursor:pointer;font-weight:600">open Planner</span> to add them</span></div>`;
+    } else {
+      el.innerHTML='';
+    }
+    return;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  const chips = days.map(d=>{
+    const date = new Date(d+'T12:00');
+    const dayNum = date.getDate();
+    const dow = date.toLocaleDateString('en-US',{weekday:'short'});
+    const isPast = d < today;
+    const isToday = d === today;
+    const isFuture = d > today;
+    const bg = isToday ? 'var(--accent)' : isPast ? 'var(--bg4)' : 'rgba(138,154,132,.15)';
+    const color = isToday ? '#fff' : isPast ? 'var(--text3)' : 'var(--accent)';
+    const border = isToday ? 'var(--accent)' : isPast ? 'var(--border)' : 'rgba(138,154,132,.35)';
+    const label = isToday ? 'TODAY' : `${dow} ${dayNum}`;
+    return `<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;background:${bg};color:${color};border:1px solid ${border};font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0">
+      💰 ${label}${isPast?'':isFuture?'':' 🎉'}
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div style="margin-bottom:10px">
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">💰 Paydays this month</div>
+    <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px">${chips}</div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
 //  BILL LIST
 // ══════════════════════════════════════════
 function renderBillList(){
@@ -1828,6 +1869,7 @@ function renderBillList(){
   if(searchQ) list=list.filter(b=>b.name.toLowerCase().includes(searchQ)||(b.notes||'').toLowerCase().includes(searchQ)||(b.category||'').toLowerCase().includes(searchQ));
   document.getElementById('bill-ct').textContent=`${list.length} shown`;
   document.getElementById('sub-bills').textContent=`${activeBills.length} active · ${closedBills.length} closed`;
+  renderPaydayStrip('payday-strip-bills', n.getFullYear(), n.getMonth());
   if(!bills.length){document.getElementById('bill-list').innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No bills yet</div><div class="empty-s">Tap + Add to create your first recurring bill</div></div>`;return;}
   if(!list.length){document.getElementById('bill-list').innerHTML=`<div class="empty"><div class="empty-ico">✅</div><div class="empty-t">Nothing here</div><div class="empty-s">No bills match this filter</div></div>`;return;}
   let sorted;
@@ -1903,6 +1945,7 @@ function calNext(){calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalend
 function billsDueOn(y,m,d){const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;return bills.filter(b=>isActiveIn(b,y,m)&&dueDateFor(b,y,m)===ds);}
 function renderCalendar(){
   const now=new Date();
+  renderPaydayStrip('payday-strip-calendar', calYear, calMonth);
   document.getElementById('cal-title').textContent=new Date(calYear,calMonth).toLocaleString('default',{month:'long',year:'numeric'});
   document.getElementById('cal-dows').innerHTML=DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
   const first=new Date(calYear,calMonth,1).getDay(),days=new Date(calYear,calMonth+1,0).getDate();
@@ -1947,6 +1990,7 @@ function renderInsights(){
   cfg = window.cfg; bills = window.bills; // always sync
   const now=new Date(); const y=now.getFullYear(),m=now.getMonth();
   document.getElementById('ins-month-lbl').textContent=now.toLocaleString('default',{month:'long',year:'numeric'});
+  renderPaydayStrip('payday-strip-insights', y, m);
   renderOverview(y,m,now);
   if(insTab==='weekly') renderWeeklyReport();
   if(insTab==='charts') renderCharts();
