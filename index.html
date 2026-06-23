@@ -1484,7 +1484,7 @@ function openAdd(){
   clearForm(); openSheet('add-sheet');
 }
 function openEdit(id){
-  const b=bills.find(x=>x.id===id); if(!b)return;
+  const b=bills.find(x=>x.id==id); if(!b)return;
   editId=id;
   const ico=b.icon||'💳';
   if(ico.startsWith('__brand__')){
@@ -1557,7 +1557,7 @@ function saveBill(){
   if(amount===null||amount===undefined||isNaN(amount)||amount<0){alert('Please enter a valid amount (0 or more).');return;}
   if(!start){alert('Please enter a start date.');return;}
   const bill={
-    id:editId||Date.now(), name, amount,
+    id:parseInt(editId||Date.now()), name, amount,
     freq:document.getElementById('f-freq').value,
     firstDueMonth:document.getElementById('f-firstmonth').value!==''?parseInt(document.getElementById('f-firstmonth').value):null,
     startDate:start, endDate:document.getElementById('f-end').value,
@@ -1576,25 +1576,25 @@ function saveBill(){
     notifUntil:document.getElementById('f-notif-until').checked,
     showInsights:document.getElementById('f-insights').checked,
     icon:currentIcon(),
-    payments:editId?(bills.find(b=>b.id===editId)||{}).payments||{}:{}
+    payments:editId?(bills.find(b=>b.id==editId)||{}).payments||{}:{}
   };
-  if(editId) bills=bills.map(b=>b.id===editId?bill:b);
+  if(editId) bills=bills.map(b=>b.id==editId?bill:b);
   else bills.push(bill);
   saveBills(); closeSheet('add-sheet'); render();
 }
 function confirmDelete(){
   if(!editId||!confirm('Delete this bill? All payment history will be lost.'))return;
-  bills=bills.filter(b=>b.id!==editId);
+  bills=bills.filter(b=>b.id!=editId);
   saveBills(); closeSheet('add-sheet'); render();
 }
 function closeBill(id){
-  const b=bills.find(x=>x.id===id); if(!b)return;
+  const b=bills.find(x=>x.id==id); if(!b)return;
   if(!confirm(`Close "${b.name}"? It will stop repeating. History is kept.`))return;
   b.endDate=new Date().toISOString().split('T')[0];
   saveBills(); closeSheet('detail-sheet'); render();
 }
 function reopenBill(id){
-  const b=bills.find(x=>x.id===id); if(!b)return;
+  const b=bills.find(x=>x.id==id); if(!b)return;
   b.endDate=''; saveBills(); closeSheet('detail-sheet'); render();
 }
 
@@ -1602,7 +1602,7 @@ function reopenBill(id){
 //  DETAIL
 // ══════════════════════════════════════════
 function openDetail(id){
-  const b=bills.find(x=>x.id===id); if(!b)return;
+  const b=bills.find(x=>x.id==id); if(!b)return;
   const p=paymentThisMonth(b), closed=isClosed(b), overdue=isOverdue(b);
   const n=new Date(); const dueStr=dueDateFor(b,n.getFullYear(),n.getMonth());
   let sb='';
@@ -1657,7 +1657,7 @@ function openDetail(id){
 //  MARK PAID
 // ══════════════════════════════════════════
 function openPaySheet(id){
-  payingId=id; const b=bills.find(x=>x.id===id); if(!b)return;
+  payingId=id; const b=bills.find(x=>x.id==id); if(!b)return;
   document.getElementById('pay-sheet-title').textContent=`Mark "${b.name}" as paid`;
   document.getElementById('prepaid-fields').style.display='none';
   document.getElementById('datepaid-fields').style.display='none';
@@ -1709,7 +1709,7 @@ function markSkipped(){
 }
 
 function unmarkPaid(id){
-  const b=bills.find(x=>x.id===id); if(!b)return;
+  const b=bills.find(x=>x.id==id); if(!b)return;
   if(!b.payments)b.payments={}; delete b.payments[currentPeriod()];
   saveBills(); closeSheet('detail-sheet'); render();
 }
@@ -1792,23 +1792,19 @@ function renderNotifBanners(){
 
 // Render icon with URL fallback - uses bill's website domain if no brand logo set
 function renderIconWithUrl(v,url,size=42){
-  // If it's already a brand logo, use it
   if(v && v.startsWith('__brand__')) return renderIcon(v,size);
-  // If it's an emoji and we have a URL, try to get logo from URL domain
   if(url && url.trim()){
     try {
       const domain = new URL(url.trim()).hostname.replace('www.','');
       const r=Math.round(size*.26);
       const clrUrl=`https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-      const fallback=v&&v!=='💳'?v:'$';
       return`<div style="width:${size}px;height:${size}px;border-radius:${r}px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;pointer-events:none">
         <img src="${clrUrl}" style="width:${size}px;height:${size}px;object-fit:contain;pointer-events:none"
-          onerror="this.src='https://logo.clearbit.com/${domain}';this.onerror=null;"
+          onerror="this.onerror=null;this.src='https://logo.clearbit.com/${domain}';"
           alt="${domain}">
       </div>`;
     } catch(e){}
   }
-  // Fall back to regular renderIcon
   return renderIcon(v,size);
 }
 
@@ -2539,7 +2535,7 @@ function handleImport(e){
         if(existingNames.has((b.name||'').toLowerCase().trim())){
           skipped++;
         } else {
-          bills.push({...b, id: nextId++});
+          bills.push({...b, id: parseInt(nextId++)});
           existingNames.add((b.name||'').toLowerCase().trim());
           added++;
         }
