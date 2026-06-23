@@ -1634,7 +1634,7 @@ function openDetail(id){
     ${b.category?`<div class="dr"><span class="dr-lbl">Category</span><span class="dr-val">${{'house':'🏠 House/Mortgage','insurance':'🛡️ Insurance','car':'🚗 Car/Auto','subscription':'📺 Subscription','education':'🎓 Education','pets':'🐾 Pets','loan':'💰 Loan','digital':'📱 Digital Services','creditcard':'💳 Credit Card','utilities':'💡 Utilities','health':'🏥 Health/Medical','other':'📋 Other'}[b.category]||b.category}</span></div>`:''}
     ${b.category==='creditcard'&&b.ccBalance!=null?`<div class="dr"><span class="dr-lbl">CC Balance</span><span class="dr-val">${getCCBadge(b,false)}</span></div>`:''}
     ${b.category==='creditcard'&&b.ccLimit?`<div class="dr"><span class="dr-lbl">Credit Limit</span><span class="dr-val">${fmtM(b.ccLimit)}</span></div>`:''}
-    ${b.category==='creditcard'&&b.ccBalance!=null&&b.ccLimit?`<div class="dr"><span class="dr-lbl">Utilization</span><span class="dr-val" style="color:${Math.round((bal/b.ccLimit)*100)>=70?'var(--warn)':'var(--accent)'}">${Math.round((bal/b.ccLimit)*100)}%</span></div>`:''}
+    ${(()=>{ if(b.category!=='creditcard'||b.ccBalance==null||!b.ccLimit) return ''; const util=Math.round((parseFloat(b.ccBalance)/parseFloat(b.ccLimit))*100); if(!isFinite(util)) return ''; return `<div class="dr"><span class="dr-lbl">Utilization</span><span class="dr-val" style="color:${util>=70?'var(--warn)':'var(--accent)'}">${util}%</span></div>`; })()}
     <div class="dr"><span class="dr-lbl">Start date</span><span class="dr-val">${fmtDate(b.startDate)}</span></div>
       <div class="dr"><span class="dr-lbl">End date</span><span class="dr-val">${b.endDate?fmtDate(b.endDate):'Ongoing'}</span></div>
       <div class="dr"><span class="dr-lbl">Due day</span><span class="dr-val">${b.dueDayOfMonth?'Day '+b.dueDayOfMonth+' of period':'—'}</span></div>
@@ -2535,7 +2535,7 @@ function handleImport(e){
         if(existingNames.has((b.name||'').toLowerCase().trim())){
           skipped++;
         } else {
-          bills.push({...b, id: parseInt(nextId++)});
+          bills.push({...b, id: nextId++});
           existingNames.add((b.name||'').toLowerCase().trim());
           added++;
         }
@@ -2940,7 +2940,7 @@ function getCCBadge(b, small=true){
       ? '<span style="font-size:9px;font-weight:700;color:var(--accent);background:rgba(34,211,160,.1);border-radius:4px;padding:1px 5px">$0 🎉</span>'
       : '<span style="font-size:12px;font-weight:700;color:var(--accent)">$0 🎉 Paid off!</span>';
   }
-  const util = b.ccLimit ? Math.round((bal/b.ccLimit)*100) : null;
+  const util = b.ccLimit ? Math.round((parseFloat(b.ccBalance)/parseFloat(b.ccLimit))*100) : null;
   const color = util ? (util>=90?'var(--danger)':util>=70?'var(--warn)':'var(--danger)') : 'var(--danger)';
   return small
     ? '<span style="font-size:9px;font-weight:700;color:'+color+';background:rgba(239,68,68,.1);border-radius:4px;padding:1px 5px">'+fmtM(bal)+(util?' ('+util+'%)':'')+'</span>'
