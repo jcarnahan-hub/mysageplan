@@ -1800,11 +1800,10 @@ function renderIconWithUrl(v,url,size=42){
       const domain = new URL(url.trim()).hostname.replace('www.','');
       const r=Math.round(size*.26);
       const clrUrl=`https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-      const gglUrl=`https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
       const fallback=v&&v!=='💳'?v:'$';
-      return`<div style="width:${size}px;height:${size}px;border-radius:${r}px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <img src="${clrUrl}" style="width:${size}px;height:${size}px;object-fit:contain"
-          onerror="this.src='https://logo.clearbit.com/${domain}';this.onerror=function(){this.parentNode.style.background='var(--bg3)';this.parentNode.innerHTML='<div style=\'width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*.5)}px\'>${fallback}</div>';}""
+      return`<div style="width:${size}px;height:${size}px;border-radius:${r}px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;pointer-events:none">
+        <img src="${clrUrl}" style="width:${size}px;height:${size}px;object-fit:contain;pointer-events:none"
+          onerror="this.src='https://logo.clearbit.com/${domain}';this.onerror=null;"
           alt="${domain}">
       </div>`;
     } catch(e){}
