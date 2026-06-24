@@ -730,8 +730,12 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
           <option value="house">🏠 House / Mortgage / Rent</option>
           <option value="insurance">🛡️ Insurance</option>
           <option value="car">🚗 Car / Auto</option>
+          <option value="jc_carloan">🚗 JC Car Loan</option>
+          <option value="sc_carloan">🚗 SC Car Loan</option>
           <option value="subscription">📺 Subscription</option>
           <option value="education">🎓 Education</option>
+          <option value="mom_eduloan">🎓 Mom Edu Loan</option>
+          <option value="noella_eduloan">🎓 Noella Edu Loan</option>
           <option value="pets">🐾 Pets</option>
           <option value="loan">💰 Loan</option>
           <option value="digital">📱 Digital Services</option>
@@ -1633,7 +1637,7 @@ function openDetail(id){
     <div class="dico-row">${renderIconWithUrl(b.icon,b.url,68)}<div class="dname">${b.name}</div><div class="dfreq">${b.freq} · ${fmtM(b.amount)}</div><div style="margin-top:6px">${sb}</div>${b.endDate?renderCountdownBadge(b):''}</div>
     <div style="padding-bottom:8px">
       ${b.payMethod?`<div class="dr"><span class="dr-lbl">Payment</span><span class="dr-val" style="color:var(--info)">${fmtPayMethod(b.payMethod)}</span></div>`:''}
-    ${b.category?`<div class="dr"><span class="dr-lbl">Category</span><span class="dr-val">${{'house':'🏠 House/Mortgage','insurance':'🛡️ Insurance','car':'🚗 Car/Auto','subscription':'📺 Subscription','education':'🎓 Education','pets':'🐾 Pets','loan':'💰 Loan','digital':'📱 Digital Services','creditcard':'💳 Credit Card','utilities':'💡 Utilities','health':'🏥 Health/Medical','other':'📋 Other'}[b.category]||b.category}</span></div>`:''}
+    ${b.category?`<div class="dr"><span class="dr-lbl">Category</span><span class="dr-val">${{'house':'🏠 House/Mortgage','insurance':'🛡️ Insurance','car':'🚗 Car/Auto','jc_carloan':'🚗 JC Car Loan','sc_carloan':'🚗 SC Car Loan','subscription':'📺 Subscription','education':'🎓 Education','mom_eduloan':'🎓 Mom Edu Loan','noella_eduloan':'🎓 Noella Edu Loan','pets':'🐾 Pets','loan':'💰 Loan','digital':'📱 Digital Services','creditcard':'💳 Credit Card','utilities':'💡 Utilities','health':'🏥 Health/Medical','other':'📋 Other'}[b.category]||b.category}</span></div>`:''}
     ${b.category==='creditcard'&&b.ccBalance!=null?`<div class="dr"><span class="dr-lbl">CC Balance</span><span class="dr-val">${getCCBadge(b,false)}</span></div>`:''}
     ${b.category==='creditcard'&&b.ccLimit?`<div class="dr"><span class="dr-lbl">Credit Limit</span><span class="dr-val">${fmtM(b.ccLimit)}</span></div>`:''}
     ${(()=>{ if(b.category!=='creditcard'||b.ccBalance==null||!b.ccLimit) return ''; const util=Math.round((parseFloat(b.ccBalance)/parseFloat(b.ccLimit))*100); if(!isFinite(util)) return ''; return `<div class="dr"><span class="dr-lbl">Utilization</span><span class="dr-val" style="color:${util>=70?'var(--warn)':'var(--accent)'}">${util}%</span></div>`; })()}
@@ -2198,7 +2202,7 @@ function renderDebtReport(){
     catGroups[cat].bills.push(b);
     catGroups[cat].total+=b.amount;
   });
-  const catLabels={'house':'🏠 House','insurance':'🛡️ Insurance','car':'🚗 Car','subscription':'📺 Subscriptions','education':'🎓 Education','pets':'🐾 Pets','loan':'💰 Loans','digital':'📱 Digital','creditcard':'💳 Credit Cards','utilities':'💡 Utilities','health':'🏥 Health','other':'📋 Other'};
+  const catLabels={'house':'🏠 House','insurance':'🛡️ Insurance','car':'🚗 Car','jc_carloan':'🚗 JC Car Loan','sc_carloan':'🚗 SC Car Loan','subscription':'📺 Subscriptions','education':'🎓 Education','mom_eduloan':'🎓 Mom Edu Loan','noella_eduloan':'🎓 Noella Edu Loan','pets':'🐾 Pets','loan':'💰 Loans','digital':'📱 Digital','creditcard':'💳 Credit Cards','utilities':'💡 Utilities','health':'🏥 Health','other':'📋 Other'};
   const uncatBills = bills.filter(b=>!isClosed(b)&&!b.category);
 
   document.getElementById('ins-debt').innerHTML=`
