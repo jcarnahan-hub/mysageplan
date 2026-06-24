@@ -760,10 +760,10 @@ nav{height:var(--nav-h);padding-bottom:var(--safe-b);background:var(--nav-bg);bo
       </div>
 
       <div id="credit-card-fields" style="display:none;background:var(--bg3);border-radius:10px;padding:12px;margin-top:4px">
-        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">💳 Credit Card Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span></div>
+        <div id="cc-fields-title" style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">💳 Credit Card Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="fg" style="margin:0"><label style="font-size:11px">Current Balance ($)</label><input type="number" id="f-cc-balance" placeholder="e.g. 2500" min="0" step="0.01" style="background:var(--bg4)" oninput="updateCCUtilization()"></div>
-          <div class="fg" style="margin:0"><label style="font-size:11px">Credit Limit ($)</label><input type="number" id="f-cc-limit" placeholder="e.g. 5000" min="0" step="0.01" style="background:var(--bg4)" oninput="updateCCUtilization()"></div>
+          <div class="fg" style="margin:0"><label id="cc-balance-label" style="font-size:11px">Current Balance ($)</label><input type="number" id="f-cc-balance" placeholder="e.g. 2500" min="0" step="0.01" style="background:var(--bg4)" oninput="updateCCUtilization()"></div>
+          <div class="fg" style="margin:0"><label id="cc-limit-label" style="font-size:11px">Credit Limit ($)</label><input type="number" id="f-cc-limit" placeholder="e.g. 5000" min="0" step="0.01" style="background:var(--bg4)" oninput="updateCCUtilization()"></div>
         </div>
         <div id="cc-utilization" style="margin-top:8px;font-size:11px;color:var(--text2)"></div>
       </div>
@@ -1523,7 +1523,7 @@ function openEdit(id){
   toggleCreditFields();
   toggleFirstMonthField();
   const pmEl=document.getElementById('f-paymethod');if(pmEl)pmEl.value=b.payMethod||'';
-  if(b.category==='creditcard'){
+  if(['creditcard','house','loan','health','jc_carloan','sc_carloan','mom_eduloan','noella_eduloan'].includes(b.category)){
     document.getElementById('f-cc-balance').value=b.ccBalance!=null?b.ccBalance:'';
     document.getElementById('f-cc-limit').value=b.ccLimit||'';
     updateCCUtilization();
@@ -1574,8 +1574,8 @@ function saveBill(){
     share:document.getElementById('f-share').value.trim(),
     category:document.getElementById('f-category').value||'',
     payMethod:document.getElementById('f-paymethod').value||'',
-    ccBalance:document.getElementById('f-category').value==='creditcard'?(document.getElementById('f-cc-balance').value!==''&&document.getElementById('f-cc-balance').value!==null?parseFloat(document.getElementById('f-cc-balance').value):null):null,
-    ccLimit:document.getElementById('f-category').value==='creditcard'?(parseFloat(document.getElementById('f-cc-limit').value)||0):null,
+    ccBalance:(()=>{const _bc=['creditcard','house','loan','health','jc_carloan','sc_carloan','mom_eduloan','noella_eduloan'];return _bc.includes(document.getElementById('f-category').value)&&document.getElementById('f-cc-balance').value!==''&&document.getElementById('f-cc-balance').value!==null?parseFloat(document.getElementById('f-cc-balance').value):null;})(),
+    ccLimit:(()=>{const _bc=['creditcard','house','loan','health','jc_carloan','sc_carloan','mom_eduloan','noella_eduloan'];return _bc.includes(document.getElementById('f-category').value)?(parseFloat(document.getElementById('f-cc-limit').value)||0):null;})(),
     getNotif:document.getElementById('f-get-notif').checked,
     billRemind:document.getElementById('f-bill-remind').checked,
     autoPaid:document.getElementById('f-auto-paid').checked,
@@ -1638,9 +1638,9 @@ function openDetail(id){
     <div style="padding-bottom:8px">
       ${b.payMethod?`<div class="dr"><span class="dr-lbl">Payment</span><span class="dr-val" style="color:var(--info)">${fmtPayMethod(b.payMethod)}</span></div>`:''}
     ${b.category?`<div class="dr"><span class="dr-lbl">Category</span><span class="dr-val">${{'house':'🏠 House/Mortgage','insurance':'🛡️ Insurance','car':'🚗 Car/Auto','jc_carloan':'🚗 JC Car Loan','sc_carloan':'🚗 SC Car Loan','subscription':'📺 Subscription','education':'🎓 Education','mom_eduloan':'🎓 Mom Edu Loan','noella_eduloan':'🎓 Noella Edu Loan','pets':'🐾 Pets','loan':'💰 Loan','digital':'📱 Digital Services','creditcard':'💳 Credit Card','utilities':'💡 Utilities','health':'🏥 Health/Medical','other':'📋 Other'}[b.category]||b.category}</span></div>`:''}
-    ${b.category==='creditcard'&&b.ccBalance!=null?`<div class="dr"><span class="dr-lbl">CC Balance</span><span class="dr-val">${getCCBadge(b,false)}</span></div>`:''}
-    ${b.category==='creditcard'&&b.ccLimit?`<div class="dr"><span class="dr-lbl">Credit Limit</span><span class="dr-val">${fmtM(b.ccLimit)}</span></div>`:''}
-    ${(()=>{ if(b.category!=='creditcard'||b.ccBalance==null||!b.ccLimit) return ''; const util=Math.round((parseFloat(b.ccBalance)/parseFloat(b.ccLimit))*100); if(!isFinite(util)) return ''; return `<div class="dr"><span class="dr-lbl">Utilization</span><span class="dr-val" style="color:${util>=70?'var(--warn)':'var(--accent)'}">${util}%</span></div>`; })()}
+    ${(()=>{ const _bc=['creditcard','house','loan','health','jc_carloan','sc_carloan','mom_eduloan','noella_eduloan']; if(!_bc.includes(b.category)||b.ccBalance==null) return ''; const lbl=b.category==='creditcard'?'CC Balance':b.category==='health'?'Amount Owed':'Remaining Balance'; return `<div class="dr"><span class="dr-lbl">${lbl}</span><span class="dr-val">${getCCBadge(b,false)}</span></div>`; })()}
+    ${(()=>{ const _bc=['creditcard','house','loan','health','jc_carloan','sc_carloan','mom_eduloan','noella_eduloan']; if(!_bc.includes(b.category)||!b.ccLimit) return ''; const lbl=b.category==='creditcard'?'Credit Limit':b.category==='health'?'Total Bill Amount':'Original Loan Amount'; return `<div class="dr"><span class="dr-lbl">${lbl}</span><span class="dr-val">${fmtM(b.ccLimit)}</span></div>`; })()}
+    ${(()=>{ const _bc=['creditcard','house','loan','health','jc_carloan','sc_carloan','mom_eduloan','noella_eduloan']; if(!_bc.includes(b.category)||b.ccBalance==null||!b.ccLimit) return ''; const util=Math.round((parseFloat(b.ccBalance)/parseFloat(b.ccLimit))*100); if(!isFinite(util)) return ''; const lbl=b.category==='creditcard'?'Utilization':'% Paid Off'; return `<div class="dr"><span class="dr-lbl">${lbl}</span><span class="dr-val" style="color:${util>=70?'var(--warn)':'var(--accent)'}">${util}%</span></div>`; })()}
     <div class="dr"><span class="dr-lbl">Start date</span><span class="dr-val">${fmtDate(b.startDate)}</span></div>
       <div class="dr"><span class="dr-lbl">End date</span><span class="dr-val">${b.endDate?fmtDate(b.endDate):'Ongoing'}</span></div>
       <div class="dr"><span class="dr-lbl">Due day</span><span class="dr-val">${b.dueDayOfMonth?'Day '+b.dueDayOfMonth+' of period':'—'}</span></div>
@@ -3046,7 +3046,50 @@ function getCCBadge(b, small=true){
 function toggleCreditFields(){
   const cat = document.getElementById('f-category').value;
   const fields = document.getElementById('credit-card-fields');
-  fields.style.display = cat==='creditcard' ? 'block' : 'none';
+  const balanceCategories = ['creditcard','house','loan','health','jc_carloan','sc_carloan','mom_eduloan','noella_eduloan'];
+  if(!balanceCategories.includes(cat)){
+    fields.style.display = 'none';
+    return;
+  }
+  fields.style.display = 'block';
+  // Adapt labels and title based on category
+  const titleEl   = document.getElementById('cc-fields-title');
+  const balLbl    = document.getElementById('cc-balance-label');
+  const limLbl    = document.getElementById('cc-limit-label');
+  if(cat==='creditcard'){
+    titleEl.innerHTML  = '💳 Credit Card Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Current Balance ($)';
+    limLbl.textContent = 'Credit Limit ($)';
+  } else if(cat==='house'){
+    titleEl.innerHTML  = '🏠 Mortgage / Loan Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Remaining Balance ($)';
+    limLbl.textContent = 'Original Loan Amount ($)';
+  } else if(cat==='health'){
+    titleEl.innerHTML  = '🏥 Health / Medical Balance <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Amount Owed ($)';
+    limLbl.textContent = 'Total Bill Amount ($)';
+  } else if(cat==='jc_carloan'){
+    titleEl.innerHTML  = '🚗 JC Car Loan Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Remaining Balance ($)';
+    limLbl.textContent = 'Original Loan Amount ($)';
+  } else if(cat==='sc_carloan'){
+    titleEl.innerHTML  = '🚗 SC Car Loan Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Remaining Balance ($)';
+    limLbl.textContent = 'Original Loan Amount ($)';
+  } else if(cat==='mom_eduloan'){
+    titleEl.innerHTML  = '🎓 Mom Edu Loan Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Remaining Balance ($)';
+    limLbl.textContent = 'Original Loan Amount ($)';
+  } else if(cat==='noella_eduloan'){
+    titleEl.innerHTML  = '🎓 Noella Edu Loan Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Remaining Balance ($)';
+    limLbl.textContent = 'Original Loan Amount ($)';
+  } else {
+    // generic loan
+    titleEl.innerHTML  = '💰 Loan Details <span style="color:var(--text3);font-weight:400;text-transform:none">(informational only)</span>';
+    balLbl.textContent = 'Remaining Balance ($)';
+    limLbl.textContent = 'Original Loan Amount ($)';
+  }
 }
 function toggleFirstMonthField(){
   const freq = document.getElementById('f-freq').value;
