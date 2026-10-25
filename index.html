@@ -3474,42 +3474,29 @@ window.addEventListener('load', () => {
   };
 
   // Sign in / out
-  function isMobileOrTablet(){
-    return /Mobi|Android|iPad|iPhone|iPod|Tablet/i.test(navigator.userAgent)||
-           (navigator.maxTouchPoints>1&&/Macintosh/.test(navigator.userAgent));
-  }
   window.signInWithGoogle = function(){
+    const btn = document.getElementById('signin-btn');
     const provider = new firebase.auth.GoogleAuthProvider();
     provider.setCustomParameters({prompt:'select_account'});
-    if(isMobileOrTablet()){
-      auth.signInWithRedirect(provider)
-        .catch(function(e){ console.error('Redirect error:',e); alert('Sign in failed: '+e.message); });
-    } else {
-      auth.signInWithPopup(provider)
-        .catch(function(e){
-          if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){
-            auth.signInWithRedirect(provider)
-              .catch(function(e2){ console.error('Redirect fallback error:',e2); alert('Sign in failed: '+e2.message); });
-          } else {
-            console.error('Sign in error:',e); alert('Sign in failed: '+e.message);
-          }
-        });
-    }
-  };
-
-  // Handle redirect result on page load (only in valid browser contexts)
-  if(['http:','https:'].includes(location.protocol)){
-    auth.getRedirectResult()
+    // Always use popup — redirect is unreliable on Android/mobile Chrome
+    // and causes sign-in loops (established pattern for this app)
+    auth.signInWithPopup(provider)
       .then(function(result){
-        if(result && result.user){ console.log('✅ Redirect sign-in complete:', result.user.email); }
+        console.log('✅ Popup sign-in complete:', result.user.email);
       })
       .catch(function(e){
-        // Ignore unsupported environment errors (e.g. service worker context)
-        if(e.code&&e.code!=='auth/operation-not-supported-in-this-environment'&&e.code!=='auth/no-current-user'){
-          console.error('Redirect result error:',e.code,e.message);
+        console.error('Sign in error:',e.code, e.message);
+        // Re-enable button
+        if(btn){ btn.textContent='Sign in with Google'; btn.disabled=false; btn.style.opacity='1'; }
+        if(e.code==='auth/popup-blocked'){
+          alert('Pop-up was blocked by your browser.\n\nPlease allow pop-ups for this site, then try again.');
+        } else if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){
+          // User dismissed — no alert needed
+        } else {
+          alert('Sign in failed: '+e.message);
         }
       });
-  }
+  };
 
   window.signOutUser = function(){
     if(!confirm('Sign out of SagePlan?')) return;
